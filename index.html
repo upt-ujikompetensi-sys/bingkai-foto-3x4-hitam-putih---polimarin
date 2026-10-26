@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Twibbon Foto POLIMARIN (3x4)</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-hover: #172554;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --border: #cbd5e1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px 12px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .main-card {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 440px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Area Preview Canvas */
+    .preview-container {
+      position: relative;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 270px;
+      aspect-ratio: 3 / 4;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      background-color: #ffffff;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    .drag-hint {
+      font-size: 0.75rem;
+      color: #64748b;
+      text-align: center;
+      margin-top: -8px;
+    }
+
+    /* Bagian Kontrol */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-upload {
+      background-color: #f1f5f9;
+      color: #334155;
+      border: 1px solid var(--border);
+    }
+
+    .btn-download {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-download:disabled {
+      background-color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      color: #64748b;
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      font-size: 0.8rem;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #475569;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      outline: none;
+    }
+
+    .button-group-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Twibbon Foto POLIMARIN</h1>
+    <p>Format Cetak 3 × 4 cm (Rasio 3:4 - 300 DPI)</p>
+  </header>
+
+  <main class="main-card">
+    <!-- Area Pratinjau Kanvas -->
+    <div class="preview-container">
+      <canvas id="photoCanvas" width="708" height="944"></canvas>
+    </div>
+    <p class="drag-hint">Sentuh & geser pada foto di atas untuk mengatur posisi</p>
+
+    <!-- Kontrol Unggah dan Pengaturan -->
+    <div class="controls">
+      <div class="file-input-wrapper">
+        <button class="btn btn-upload" id="uploadBtn">📁 Pilih / Ambil Foto</button>
+        <input type="file" id="fileInput" accept="image/*" />
+      </div>
+
+      <!-- Pengaturan Zoom -->
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Ukuran / Zoom</span>
+          <span id="zoomVal">100%</span>
+        </div>
+        <input type="range" id="zoomSlider" min="0.5" max="3" step="0.01" value="1" disabled />
+      </div>
+
+      <!-- Putar & Reset -->
+      <div class="button-group-row">
+        <button type="button" class="btn btn-secondary" id="rotateBtn" disabled>↻ Putar 90°</button>
+        <button type="button" class="btn btn-secondary" id="resetBtn" disabled>Reset Posisi</button>
+      </div>
+
+      <!-- Unduh Foto -->
+      <button type="button" class="btn btn-download" id="downloadBtn" disabled>
+        💾 Unduh PNG (3×4 cm)
+      </button>
+    </div>
+  </main>
+
+  <script>
+    // Dimensi kanvas: 3 x 4 cm pada standar cetak 300-600 DPI (708 x 944 px)
+    const CANVAS_WIDTH = 708;
+    const CANVAS_HEIGHT = 944;
+
+    // Bingkai sekeliling foto tetap dipertahankan
+    const MARGIN_TOP = 20;
+    const MARGIN_LEFT = 20;
+    const MARGIN_RIGHT = 20;
+
+    // REVISI: Tinggi kotak putih bawah diperkecil dari 140px menjadi 80px
+    const MARGIN_BOTTOM = 80;
+
+    // Area batas foto peserta (otomatis meluas ke bawah mengisi ruang yang ditinggalkan kotak putih)
+    const INNER_X = MARGIN_LEFT;
+    const INNER_Y = MARGIN_TOP;
+    const INNER_WIDTH = CANVAS_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
+    const INNER_HEIGHT = CANVAS_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM;
+
+    // Elemen DOM
+    const canvas = document.getElementById('photoCanvas');
+    const ctx = canvas.getContext('2d');
+    const fileInput = document.getElementById('fileInput');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomVal = document.getElementById('zoomVal');
+    const rotateBtn = document.getElementById('rotateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // Variabel transformasi foto
+    let img = null;
+    let scale = 1;
+    let baseScale = 1;
+    let posX = 0;
+    let posY = 0;
+    let rotation = 0;
+
+    // Variabel interaksi sentuh / seret
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    // Gambar bingkai awal
+    drawCanvas();
+
+    // Event Listener Unggah Foto
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        img = new Image();
+        img.onload = () => {
+          resetTransformation();
+          enableControls();
+          drawCanvas();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function resetTransformation() {
+      if (!img) return;
+      rotation = 0;
+
+      const scaleW = INNER_WIDTH / img.width;
+      const scaleH = INNER_HEIGHT / img.height;
+      baseScale = Math.max(scaleW, scaleH);
+      scale = baseScale;
+
+      posX = INNER_X + INNER_WIDTH / 2;
+      posY = INNER_Y + INNER_HEIGHT / 2;
+
+      zoomSlider.value = "1";
+      zoomVal.textContent = "100%";
+    }
+
+    function enableControls() {
+      zoomSlider.disabled = false;
+      rotateBtn.disabled = false;
+      resetBtn.disabled = false;
+      downloadBtn.disabled = false;
+    }
+
+    // Gambar ulang Kanvas
+    function drawCanvas() {
+      // 1. Bersihkan seluruh kanvas menjadi putih
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // 2. Gambar Foto Peserta (Masking di dalam batas bingkai)
+      if (img) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(INNER_X, INNER_Y, INNER_WIDTH, INNER_HEIGHT);
+        ctx.clip();
+
+        ctx.translate(posX, posY);
+        ctx.rotate((rotation * Math.PI) / 180);
+        ctx.scale(scale, scale);
+
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        ctx.restore();
+      } else {
+        // Placeholder awal
+        ctx.fillStyle = '#f1f5f9';
+        ctx.fillRect(INNER_X, INNER_Y, INNER_WIDTH, INNER_HEIGHT);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '32px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Belum ada foto', INNER_X + INNER_WIDTH / 2, INNER_Y + INNER_HEIGHT / 2);
+      }
+
+      // 3. Tulis teks "POLIMARIN"
+      // Ukuran, font, warna, dan posisi horizontal tetap persis
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 50px "Times New Roman", Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Posisi vertikal otomatis tepat di tengah kotak putih yang telah diperkecil
+      const textY = INNER_Y + INNER_HEIGHT + (MARGIN_BOTTOM / 2);
+      ctx.fillText('POLIMARIN', CANVAS_WIDTH / 2, textY);
+    }
+
+    // Zoom Slider
+    zoomSlider.addEventListener('input', (e) => {
+      const zoomFactor = parseFloat(e.target.value);
+      scale = baseScale * zoomFactor;
+      zoomVal.textContent = Math.round(zoomFactor * 100) + '%';
+      drawCanvas();
+    });
+
+    // Tombol Putar 90 Derajat
+    rotateBtn.addEventListener('click', () => {
+      rotation = (rotation + 90) % 360;
+      drawCanvas();
+    });
+
+    // Tombol Reset Posisi
+    resetBtn.addEventListener('click', () => {
+      resetTransformation();
+      drawCanvas();
+    });
+
+    // Logika Drag / Geser Foto
+    function getPointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = CANVAS_WIDTH / rect.width;
+      const scaleY = CANVAS_HEIGHT / rect.height;
+
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function onPointerDown(e) {
+      if (!img) return;
+      isDragging = true;
+      const pos = getPointerPos(e);
+      startX = pos.x - posX;
+      startY = pos.y - posY;
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging || !img) return;
+      const pos = getPointerPos(e);
+      posX = pos.x - startX;
+      posY = pos.y - startY;
+      drawCanvas();
+    }
+
+    function onPointerUp() {
+      isDragging = false;
+    }
+
+    canvas.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+    window.addEventListener('touchmove', onPointerMove, { passive: false });
+    window.addEventListener('touchend', onPointerUp);
+
+    // Unduh File PNG
+    downloadBtn.addEventListener('click', () => {
+      if (!img) return;
+      const link = document.createElement('a');
+      link.download = 'Twibbon_POLIMARIN_3x4.png';
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    });
+  </script>
+</body>
+</html>
